@@ -1,6 +1,6 @@
 services:
   app:
-    image: axsuul/plex-media-server-exporter
+    image: pierreluc/plex-media-server-exporter
     build: .
     environment:
       # Can be set in .env
