@@ -1,10 +1,6 @@
 name: docker
 
-on:
-  # Only on tagged release
-  release:
-    types: [published, edited]
-
+on: push
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: docker.io
@@ -12,39 +8,21 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  docker:
+  push_to_registry:
+    name: push docker image to hub
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: check repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Set up Docker buildx cache
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Login to Docker Hub
+      - name: login to docker registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_TOKEN}}
 
-      - name: Build and push
+      - name: build and push docker image to registry
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: pierreluc/plex-media-server-exporter:latest            
-
-      - name: Update Docker buildx cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          tags: pierreluc/plex-media-server-exporter:latest
