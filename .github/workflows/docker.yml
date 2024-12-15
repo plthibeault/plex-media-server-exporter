@@ -5,12 +5,18 @@ on:
   release:
     types: [published, edited]
 
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: docker.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -26,40 +32,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image tags
-        run: |
-          echo 'DOCKER_IMAGE_TAGS<<EOF' >> $GITHUB_ENV
-
-          # Add release tag if it matches pattern (e.g. 0.0.1)
-          if [[ ${{ github.ref_name }} =~ .+\..+\..+ ]]; then
-            echo ",ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> $GITHUB_ENV
-          fi
-
-          # Only add latest tag if master branch
-          if [[ ${{ github.ref_name }} == 'master' ]]; then
-            echo ",ghcr.io/${{ github.repository }}:latest" >> $GITHUB_ENV
-          fi
-
-          echo 'EOF' >> $GITHUB_ENV
-
-      # Only build and push Docker images for releases
-      - name: Build and push Docker image to GitHub Container Registry
-        uses: docker/build-push-action@v2
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
-          context: .
           push: true
-          tags: ${{ env.DOCKER_IMAGE_TAGS }}
-          build-args: |
-            git_commit_id=${{ github.sha }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
+          tags: pierreluc/plex-media-server-exporter:latest            
 
       - name: Update Docker buildx cache
         run: |
